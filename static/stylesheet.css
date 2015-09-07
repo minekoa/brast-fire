@@ -1,0 +1,269 @@
+    H1
+    {
+      color:#444;
+      background-color: #FFF;
+      text-decoration:none;
+      font-size:2em;
+      text-align:center;
+      border: none;
+      letter-spacing:1em;
+    }
+
+    H1 A
+    {
+      color:#BBB;
+      text-decoration:none;
+    }
+
+    H1 A:hover
+    {
+       color:blue;
+       text-decoration:underline;
+    }
+
+	DT
+	{
+		color:#CCC;
+		font-size:14pt;
+		background-color:#333;
+		padding:3px;
+		border-left:1em solid #CCC;
+	}
+
+	.to_index
+	{
+		border-top:1px solid #333;
+		padding:3px;
+		margin-bottom:2em;
+	}
+
+	H2
+	{
+		color:#666;
+		border-top:1px solid #666;
+		border-left:5px solid #666;
+		
+		margin:0;
+		margin-top:2em;
+
+		padding-top:2px;
+		padding-left:0.5em;
+	}
+
+	H3
+	{
+		border-bottom:1px solid #666;
+		margin-top:2em;
+	}
+
+	H4
+	{
+		border-left:10px solid #666;
+		padding:1px;
+		padding-left:3px;
+		vertical-align:middle;
+		margin-top:1.5em;
+	}
+
+	H5
+	{
+		font-size:1em;
+	}
+
+	BLOCKQUOTE
+	{
+		margin-left:3em;
+		padding:1em;
+
+		background-color:#F8F8F5;
+		border:1px solid #886;
+
+		margin-buttom:0;
+	}
+
+	.blockquote_from
+	{
+		color:#449;
+		text-align:right;
+		margin:0;
+		padding:5px;
+
+		border-top:1px solid #886;
+	}
+
+/* Nabi Bar ==========================*/
+    .navibar
+    {
+      color: #AAA;
+      background-color: #EEE;
+      letter-spacing:0.3em;
+    }
+    .navibar A
+    {
+       color: #888;
+       text-decoration: none;
+    }
+    .navibar A:hover
+    {
+    color: #B88;
+       text-decoration: underline;
+    }
+/* My Pre ==========================*/
+	.my_pre
+	{
+		margin-left:2em;
+		margin-right:2em;
+
+		background-color:#F5F5F8;
+		border:1px dotted #66E;
+		padding:0.5em;
+	}
+	.my_pre HR
+	{
+		border-top:2px dotted #66F;
+	}
+
+	.my_pre STRONG
+	{
+		color:#770000;
+	}
+
+	.my_pre_title
+	{
+		margin-top:1em;
+		margin-buttom:0;
+		margin-left:2em;
+		padding-left:0.5em;
+		color:#666;
+		font-size:9pt;
+	}
+/* code ================================*/
+	PRE.code
+	{
+		margin-left:2em;
+		margin-right:2em;
+
+		background-color:#F5F5F8;
+		border:1px dotted #66E;
+		padding:0.5em;
+	}
+	PRE.code HR
+	{
+		border-top:2px dotted #66F;
+	}
+
+	PRE.code STRONG
+	{
+		color:#770000;
+	}
+
+	.my_pre_title
+	{
+		margin-top:1em;
+		margin-buttom:0;
+		margin-left:2em;
+		padding-left:0.5em;
+		color:#666;
+		font-size:9pt;
+	}
+
+/* My Table ========================*/
+    TABLE /*.my_table*/
+	{
+        margin:1em;
+		border:1px solid #555555;
+	}
+
+	TH /*.my_table TH*/
+	{
+		text-align:center;
+		border:1px solid #555555;
+		margin:0;
+		padding: 0.2em 0.5em 0.2em 0.5em;
+
+		color:#FFF;
+		background-color:#555555;
+	}
+
+    TD /*.my_table TD*/
+	{
+		border:1px solid #555555;
+		margin:0;
+		padding: 0.2em 0.5em 0.2em 0.5em;
+	}
+
+	.my_table STRONG
+	{
+		color:#E55;
+	}
+
+/* My Memo =============================*/
+	.my_memo
+	{
+		margin:0.5em;
+		padding:0.5em;
+		font-size:90%;
+		background-color:#FBB;
+		color:#944;
+	}
+
+	.my_memo P
+	{
+		margin:0.5em;
+	}
+
+/* Source =============================*/
+DIV.source_name
+{
+	text-align:right;
+	color:#88F;
+	fornt-size* 80%;
+	border-bottom:1px solid #88F;
+}
+
+SPAN.code_comment
+{
+	color:#7799EE;
+}
+SPAN.code_string
+{
+	color:#229922
+}
+/* Console ============================*/
+PRE.console
+{
+	color:#FFF;
+	background-color:#000;
+	padding:0.5em;
+	margin:2em
+}
+SPAN.cons_input
+{
+	color:#66F;
+}
+.console STRONG
+{
+	color:#FF6666;
+}
+
+DIV.note
+{
+	font-size:80%;
+	border-top:1px dotted #999;
+	padding-left:2em;
+}
+
+DIV.memo
+{
+	font-size:90%;
+	color:#666;
+	border:1px dotted #999;
+	margin:0.5em 1.5em;
+	padding:0.5em;
+}
+
+textarea
+{
+	width:80em;
+	height:5em;
+}
