@@ -78,7 +78,7 @@
 		background-color:#F8F8F5;
 		border:1px solid #886;
 
-		margin-buttom:0;
+		margin-bottom:0;
 	}
 
 	.blockquote_from
@@ -131,7 +131,7 @@
 	.my_pre_title
 	{
 		margin-top:1em;
-		margin-buttom:0;
+		margin-bottom:0;
 		margin-left:2em;
 		padding-left:0.5em;
 		color:#666;
@@ -160,7 +160,7 @@
 	.my_pre_title
 	{
 		margin-top:1em;
-		margin-buttom:0;
+		margin-bottom:0;
 		margin-left:2em;
 		padding-left:0.5em;
 		color:#666;
@@ -217,7 +217,7 @@ DIV.source_name
 {
 	text-align:right;
 	color:#88F;
-	fornt-size* 80%;
+	font-size: 80%;
 	border-bottom:1px solid #88F;
 }
 
@@ -267,3 +267,14 @@ textarea
 	width:80em;
 	height:5em;
 }
+
+.postit{ padding:0.5em; width:24em; height:10em; border: 1px solid #F55; background-color: #FF6 } 
+.postit-handle{ color:#FF6; background-color:#223; font-size:0.5em}
+.postit-face{ padding:0.5em }
+.board { border:1px solid #666}
+.board-cell{ border:1px solid #66F; background-color:#66F;  
+             padding: 0.5em; margin:0.5em; 
+             -khtml-user-drag: element;
+             width:24em; height:10em;}
+
+

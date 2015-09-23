@@ -12,8 +12,8 @@ import sys
 # Config
 #============================================================
 
-THEMES_DIR            = 'F:/zhome/webbin/brastfire/themes'
-STYLESHEET_PATH       = 'F:/zhome/webbin/brastfire/stylesheet.cs'
+THEMES_DIR            = '/home/zoni/project/brast-fire/themes'
+STYLESHEET_PATH       = '/home/zoni/project/brast-fire/stylesheet.cs'
 THEME_IDEA_COL_NUMBER = 3
 
 #============================================================
@@ -97,7 +97,8 @@ class HtmlCanvas(HtmlCanvasBase):
         self.header = HtmlHeaderCanvas() # html header
 
     def rendering(self):
-        return ''.join(['<html>',
+        return '\n'.join(['<!DOCTYPE html>'
+                        '<html>',
                         '<head>', self.header.buf, '</head>'
                         '<body>', self.buf, '</body>'
                         '</html>'])
@@ -382,6 +383,85 @@ def idea(theme, idea_id):
     renderingIdea(html, idea)
     return html.rendering()
 
+
+
+#============================================================
+# Draggable Test (like Kanban)
+#============================================================
+
+def _renderingJScript(html):
+    html.writeOpenTag('script', {'type':"text/javascript"})
+    html.writeText('''
+function onDragStart(event) {
+  event.dataTransfer.setData("text", event.target.id);
+}
+
+function onDragOver(event) {
+  event.preventDefault();
+}
+
+function onDrop(event) {
+  var id_name  = event.dataTransfer.getData("text");
+  var drag_elm = document.getElementById(id_name);
+  event.currentTarget.appendChild(drag_elm);
+
+  event.preventDefault();
+}''')
+    html.writeCloseTag('script')
+
+
+def _renderingPostIt(html, theme_name, idea):
+    html.writeOpenTag('div', {'class':'postit'
+                              , 'draggable':'true'
+                              , 'ondragstart':'onDragStart(event);'
+                              , 'id': 'idea-%s' % idea.id})
+
+    #title-bar
+    html.writeOpenTag('div', {'class': 'postit-handle'})
+    html.writeTag('a', '■',{'href': url_for('idea', theme=theme_name, idea_id=idea.id)})
+    html.writeTag('span', '#%s' % idea.id)
+    html.writeCloseTag('div')
+
+    #body
+    html.writeOpenTag('div', {'class': 'postit-face'})
+    for l in idea.name:
+        html.writeTag( 'p', conv_encoding(l))
+    html.writeCloseTag('div')
+
+    html.writeCloseTag('div')
+
+def _renderingKanbanBoard(html, rownum, colnum):
+    html.writeOpenTag('table', {'class':'board'})
+    for i in range(0, rownum):
+        html.writeOpenTag('tr', {'class':'board-row'})
+        for j in range(0, colnum):
+            html.writeTag('td','',{ 'class':'board-cell'
+                                     ,'ondragover':'onDragOver(event);'
+                                     ,'ondrop'    :'onDrop(event);'
+                                      ,'id' :'bcell%d_%d' % (i,j)})
+        html.writeCloseTag('tr')
+    html.writeCloseTag('table')
+
+@app.route("/test/<theme_name>")
+def test(theme_name):
+    html = HtmlCanvas()
+    renderingHtmlHeader(html)
+    renderingPageHeader(html, theme_name)
+    _renderingJScript(html)
+
+    theme = BTTheme(conv_encoding(theme_name))
+
+    html.writeOpenTag('div')
+    for idea in theme.getIdeaList():
+        _renderingPostIt(html,theme_name,idea)
+    html.writeCloseTag('div')
+
+    _renderingKanbanBoard(html, 2, 3)
+
+
+    html.writeTag('a', 'アイデアを追加', {'href': url_for('add_new_idea', theme=theme_name)})
+
+    return html.rendering()
 
 #============================================================
 # The application main (for Debug)
