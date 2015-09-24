@@ -113,13 +113,13 @@ class BTTheme(object):
     todo: テーマの Wiki (description.txt とかを読みこませるか？)
     '''
     def __init__(self, theme_name):
-        self.name   = theme_name
+        self.text   = theme_name
 
     def savePath(self):
-        return os.path.join(THEMES_DIR, conv_encoding(self.name,'shift_jis'))
+        return os.path.join(THEMES_DIR, conv_encoding(self.text,'shift_jis'))
 
     def getIdeaList(self):
-        assert os.path.exists(self.savePath()) , 'Theme:%s is not found.' % self.name
+        assert os.path.exists(self.savePath()) , 'Theme:%s is not found.' % self.text
         idea_list = []
 
         for dpath, dirs, files in os.walk(self.savePath()):
@@ -140,8 +140,9 @@ class BTIdea(object):
     def __init__(self, dpath, idea_id):
         self.theme_dir = dpath
         self.id        = idea_id
-        self.name      = []
-        self.memo      = []
+        self.text      = []
+        self.note      = []
+        self.pos       = (None, None)
 
     def sepline(self):
         return "================\n"
@@ -153,24 +154,40 @@ class BTIdea(object):
         f = open(self.path(),'r')
 
         memo_reading = False
+        isMeta = True
         for line in f.readlines():
+            if isMeta:
+               if line.strip() == '': isMeta = False
+               else:
+                   exp_pair = line.split('=')
+                   if len(exp_pair) == 2:
+                       setattr(self, exp_pair[0], eval(exp_pair[1]))
+                       print getattr(self, exp_pair[0])
+                   else:
+                       isMeta = False
+               continue
+            
             if not memo_reading:
                 if line.strip() == self.sepline().strip():
                     memo_reading = True
                     continue
-                self.name.append( "%s" % line.strip() )
+                self.text.append( "%s" % line.strip() )
 
             else:
-                self.memo.append(line.strip())
+                self.note.append(line.strip())
         f.close()
 
     def save(self):
         f = open(self.path(),'w')
-        f.write('\n'.join(line.strip() for line in self.name))
+        f.write('pos=%s\n' % self.pos.__repr__())
+        f.write('\n')
+        f.write('\n'.join(line.strip() for line in self.text))
         f.write('\n')
         f.write(self.sepline())
-        f.write('\n'.join(line.strip() for line in self.memo))
+        f.write('\n'.join(line.strip() for line in self.note))
         f.close()
+
+
 
 #============================================================
 # View - elaborate global objects
@@ -195,7 +212,7 @@ def renderingPageHeader(html,theme_name='', idea=None):
 
         if idea != None:
             html.writeText('>>')
-            html.writeTag('a', 'アイデア:%s%s' % (conv_encoding(idea.name[0]), '...' if len(idea.name) > 1 else '')
+            html.writeTag('a', 'アイデア:%s%s' % (conv_encoding(idea.text[0]), '...' if len(idea.text) > 1 else '')
                           , {'href': url_for('idea', theme=theme_name, idea_id=idea.id)})
             html.writeText('[')
             html.writeTag('a', '編集' , {'href': url_for('edit_idea', theme=theme_name, idea_id=idea.id)})
@@ -210,8 +227,8 @@ def renderingItemForm(html, post_url, idea=None):
     '''
     html.writeOpenTag('form', {'method':'post', 'action': post_url})
 
-    idea_name   = '\n'.join([conv_encoding(line) for line in idea.name]) if idea != None else ''
-    description = '\n'.join([conv_encoding(line) for line in idea.memo]) if idea != None else ''
+    idea_name   = '\n'.join([conv_encoding(line) for line in idea.text]) if idea != None else ''
+    description = '\n'.join([conv_encoding(line) for line in idea.note]) if idea != None else ''
 
     html.writeOpenTag('div')
     html.writeTag('h3', 'Idea(一行見出し):')
@@ -233,11 +250,11 @@ def renderingItemForm(html, post_url, idea=None):
 def renderingIdea(html, idea):
     html.writeTag('h3', '一行見出し')
 
-    for l in idea.name:
+    for l in idea.text:
         html.writeTag('p', conv_encoding(l))
 
     html.writeTag('h3', '補足')
-    for l in idea.memo:
+    for l in idea.note:
         html.writeTag('p', conv_encoding(l))
 
 #============================================================
@@ -286,7 +303,7 @@ def theme(theme_name):
             
         html.writeOpenTag('td')
         html.writeOpenTag('a',{'href': url_for('idea', theme=theme_name, idea_id=idea.id)})
-        for l in idea.name:
+        for l in idea.text:
             html.writeTag( 'p', conv_encoding(l))
         html.writeCloseTag('a')
 
@@ -357,8 +374,8 @@ def edit_idea(theme, idea_id):
 @app.route("/save_idea/<theme>/<idea_id>", methods=['POST'])
 def save_idea(theme, idea_id):
     idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
-    idea.name = [conv_encoding(l) for l in request.form['name'].split('\n')]
-    idea.memo = [conv_encoding(l) for l in request.form['memo'].split('\n')]
+    idea.text = [conv_encoding(l) for l in request.form['name'].split('\n')]
+    idea.note = [conv_encoding(l) for l in request.form['memo'].split('\n')]
     idea.save()
 
     html = HtmlCanvas()
@@ -424,21 +441,24 @@ def _renderingPostIt(html, theme_name, idea):
 
     #body
     html.writeOpenTag('div', {'class': 'postit-face'})
-    for l in idea.name:
+    for l in idea.text:
         html.writeTag( 'p', conv_encoding(l))
     html.writeCloseTag('div')
 
     html.writeCloseTag('div')
 
-def _renderingKanbanBoard(html, rownum, colnum):
+def _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list):
     html.writeOpenTag('table', {'class':'board'})
-    for i in range(0, rownum):
+    for row in range(0, rownum):
         html.writeOpenTag('tr', {'class':'board-row'})
-        for j in range(0, colnum):
-            html.writeTag('td','',{ 'class':'board-cell'
+        for col in range(0, colnum):
+            html.writeOpenTag('td',{ 'class':'board-cell'
                                      ,'ondragover':'onDragOver(event);'
                                      ,'ondrop'    :'onDrop(event);'
-                                      ,'id' :'bcell%d_%d' % (i,j)})
+                                     ,'id' :'bcell%d_%d' % (col,row)})
+            for idea in [i for i in idea_list if (i.pos[0] == row and i.pos[1] == col)]:
+                _renderingPostIt(html, theme_name, idea)
+            html.writeCloseTag('td')
         html.writeCloseTag('tr')
     html.writeCloseTag('table')
 
@@ -450,13 +470,28 @@ def test(theme_name):
     _renderingJScript(html)
 
     theme = BTTheme(conv_encoding(theme_name))
+    idea_list = theme.getIdeaList()
+
+
+    colnum = 3
+    rownum = 2
+
+    try:
+        colmax = max([i.pos[0] for i in idea_list if i.pos[0] != None])
+        rowmax = max([i.pos[1] for i in idea_list if i.pos[1] != None])
+    except ValueError:
+        colmax = colnum
+        rowmax = rownum
+    colnum = colmax if colnum < colmax else colnum
+    rownum = rowmax if rownum < rowmax else rownum
+
+    _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list)
 
     html.writeOpenTag('div')
-    for idea in theme.getIdeaList():
+    html.writeTag('p', '*未配置*')
+    for idea in (i for i in idea_list if i.pos[0] == None and i.pos[1] == None):
         _renderingPostIt(html,theme_name,idea)
     html.writeCloseTag('div')
-
-    _renderingKanbanBoard(html, 2, 3)
 
 
     html.writeTag('a', 'アイデアを追加', {'href': url_for('add_new_idea', theme=theme_name)})
