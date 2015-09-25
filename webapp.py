@@ -81,6 +81,9 @@ class HtmlCanvasBase(object):
     def writeRawText(self, text):
         self._write(text)
 
+    def writeRawText(self, text):
+        self._write(text)
+
     def writeTag(self, tag_name, text, attr_list={}):
         self.writeOpenTag(tag_name, attr_list)
         self.writeText(text)
@@ -396,9 +399,9 @@ def idea(theme, idea_id):
 # Draggable Test (like Kanban)
 #============================================================
 
-def _renderingJScript(html):
+def _renderingJScript(html, theme_name):
     html.writeOpenTag('script', {'type':"text/javascript"})
-    html.writeText('''
+    html.writeRawText('''
 function onDragStart(event) {
   event.dataTransfer.setData("text", event.target.id);
 }
@@ -412,8 +415,30 @@ function onDrop(event) {
   var drag_elm = document.getElementById(id_name);
   event.currentTarget.appendChild(drag_elm);
 
+  notifyMovePostit(id_name, event.currentTarget.id);
   event.preventDefault();
 }''')
+
+    html.writeRawText('''
+function notifyMovePostit(idea_id, bcell_id){
+    var data = { idea: idea_id, bcell: bcell_id };
+
+    var ajaxObject = new XMLHttpRequest();
+
+    ajaxObject.onreadystatechange = function() {
+        var READYSTATE_COMPLETED = 4;
+        var HTTP_STATUS_OK = 200;
+        if (this.readyState == READYSTATE_COMPLETED && this.status == HTTP_STATUS_OK) {
+            /*alert( this.responseText );*/
+        }
+    };
+
+    ajaxObject.open("POST", "%s", true);
+    ajaxObject.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded' );
+    ajaxObject.send( 'idea=' + idea_id + '&bcell=' + bcell_id);
+}''' % url_for('move_postit', theme=theme_name, _external=True))
+
+
     html.writeCloseTag('script')
 
 
@@ -486,6 +511,23 @@ def test(theme_name):
     html.writeTag('a', 'アイデアを追加', {'href': url_for('add_new_idea', theme=theme_name)})
 
     return html.rendering()
+
+
+@app.route("/move_postit/<theme>", methods=['POST'])
+def move_postit(theme):
+
+    matobj = re.match(r"idea-([0-9_]+)", request.form['idea'])
+    idea_id = matobj.group(1)
+    matobj = re.match(r"bcell([0-9]+)_([0-9]+)", request.form['bcell'])
+    col = int(matobj.group(1))
+    row = int(matobj.group(2))
+
+    idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
+    idea.load()
+    idea.pos = (row, col)
+    idea.save()
+
+    return 'MOVE_SAVED! %s -to-> %s' % (request.form['idea'], request.form['bcell'])
 
 #============================================================
 # The application main (for Debug)
