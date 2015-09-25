@@ -144,47 +144,37 @@ class BTIdea(object):
         self.note      = []
         self.pos       = (None, None)
 
-    def sepline(self):
-        return "================\n"
-
     def path(self):
         return os.path.join(self.theme_dir, self.id)
 
     def load(self):
         f = open(self.path(),'r')
 
-        memo_reading = False
-        isMeta = True
+        in_meta = True
         for line in f.readlines():
-            if isMeta:
-               if line.strip() == '': isMeta = False
+            # load meta info
+            if in_meta:
+               if line.strip() == '': in_meta = False
                else:
                    exp_pair = line.split('=')
                    if len(exp_pair) == 2:
                        setattr(self, exp_pair[0], eval(exp_pair[1]))
-                       print getattr(self, exp_pair[0])
                    else:
-                       isMeta = False
+                       in_meta = False
                continue
             
-            if not memo_reading:
-                if line.strip() == self.sepline().strip():
-                    memo_reading = True
-                    continue
-                self.text.append( "%s" % line.strip() )
+            # load text
+            self.text.append( "%s" % line.strip() )
 
-            else:
-                self.note.append(line.strip())
         f.close()
 
     def save(self):
         f = open(self.path(),'w')
         f.write('pos=%s\n' % self.pos.__repr__())
+        f.write('note=%s\n' % self.note.__repr__())
         f.write('\n')
         f.write('\n'.join(line.strip() for line in self.text))
         f.write('\n')
-        f.write(self.sepline())
-        f.write('\n'.join(line.strip() for line in self.note))
         f.close()
 
 
@@ -462,28 +452,27 @@ def _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list):
         html.writeCloseTag('tr')
     html.writeCloseTag('table')
 
+def _calcGridSize(rowmin, colmin, idea_list):
+    try:
+        rowmax = max([i.pos[1] for i in idea_list if i.pos[1] != None])
+        colmax = max([i.pos[0] for i in idea_list if i.pos[0] != None])
+
+        return (colmax if colmin < colmax else colmin,
+                rowmax if rowmin < rowmax else rowmin)
+
+    except ValueError:
+        return (rowmin, colmin)
+
 @app.route("/test/<theme_name>")
 def test(theme_name):
     html = HtmlCanvas()
     renderingHtmlHeader(html)
     renderingPageHeader(html, theme_name)
-    _renderingJScript(html)
+    _renderingJScript(html, theme_name)
 
     theme = BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
-
-
-    colnum = 3
-    rownum = 2
-
-    try:
-        colmax = max([i.pos[0] for i in idea_list if i.pos[0] != None])
-        rowmax = max([i.pos[1] for i in idea_list if i.pos[1] != None])
-    except ValueError:
-        colmax = colnum
-        rowmax = rownum
-    colnum = colmax if colnum < colmax else colnum
-    rownum = rowmax if rownum < rowmax else rownum
+    colnum , rownum = _calcGridSize(2, 3, idea_list)
 
     _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list)
 
