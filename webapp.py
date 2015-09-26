@@ -408,16 +408,28 @@ def _renderingPostIt(html, theme_name, idea):
                               , 'ondragstart':'onDragStart(event);'
                               , 'id': 'idea-%s' % idea.id})
 
-    #title-bar
-    html.writeOpenTag('div', {'class': 'postit-handle'})
+    # handle-bar
+    html.writeOpenTag('div', {'class': 'postit_handle'})
+
+    html.writeOpenTag('div', {'class': 'postit_handle_id'})
     html.writeTag('a', '■',{'href': url_for('idea', theme=theme_name, idea_id=idea.id)})
-    html.writeTag('span', '#%s' % idea.id)
+    html.writeText('#%s' % idea.id)
     html.writeCloseTag('div')
 
+    html.writeOpenTag('div', {'class':'postit_handle_edit'})
+    html.writeTag('a', '[edit]',{'href': url_for('edit_idea', theme=theme_name, idea_id=idea.id)})
+    html.writeCloseTag('div')
+
+    # handle-bar > popup-note
+    html.writeOpenTag('div', {'class': 'popup_note'})
+    for l in idea.note:  html.writeTag( 'p', conv_encoding(l))
+    html.writeCloseTag('div')
+
+    html.writeCloseTag('div') # close handle-bar
+
     #body
-    html.writeOpenTag('div', {'class': 'postit-face'})
-    for l in idea.text:
-        html.writeTag( 'p', conv_encoding(l))
+    html.writeOpenTag('div', {'class': 'postit_face'})
+    for l in idea.text: html.writeTag( 'p', conv_encoding(l))
     html.writeCloseTag('div')
 
     html.writeCloseTag('div')

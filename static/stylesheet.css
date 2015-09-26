@@ -269,8 +269,25 @@ textarea
 }
 
 .postit{ padding:0.5em; width:24em; height:10em; border: 1px solid #F55; background-color: #FF6 } 
-.postit-handle{ color:#FF6; background-color:#223; font-size:0.5em}
-.postit-face{ padding:0.5em }
+.postit_handle{ color:#FF6; background-color:#223; font-size:0.8em; padding:0.2em}
+.postit_handle_id {text-align:left; float:left}
+.postit_handle_id A:link { color:#FF6 }
+.postit_handle_id A:visited { color:#FF6 }
+.postit_handle_edit { text-align:right }
+.postit_handle_edit A:link { color:#FF6 }
+.postit_handle_edit A:visited { color:#FF6 }
+.postit_handle:hover .popup_note{ display:block; }
+.postit_face{ padding:0.5em }
+
+.popup_note {display:none; 
+             position:absolute; z-index:9999; 
+             background-color:#66F; color:black; font-size:1em; 
+             border-radius: 0.5em;
+             padding:0.5em;}
+.popup_note p {padding: 0; margin: 0;}
+
+
+
 .board { border:1px solid #666}
 .board-cell{ border:1px solid #66F; background-color:#66F;  
              padding: 0.5em; margin:0.5em; 
