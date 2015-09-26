@@ -150,6 +150,9 @@ class BTIdea(object):
     def path(self):
         return os.path.join(self.theme_dir, self.id)
 
+    def exists(self):
+        return os.path.exists(self.path())
+
     def load(self):
         f = open(self.path(),'r')
 
@@ -273,42 +276,6 @@ def index():
 
     return html.rendering()
 
-@app.route("/theme/<theme_name>")
-def theme(theme_name):
-    html = HtmlCanvas()
-    renderingHtmlHeader(html)
-    renderingPageHeader(html, theme_name)
-
-    theme = BTTheme(conv_encoding(theme_name))
-    html.writeOpenTag('table')
-    html.writeOpenTag('tr')
-    html.writeTag('th', 'アイデアボード', {'colspan': '%d' % THEME_IDEA_COL_NUMBER})
-    html.writeCloseTag('tr')
-
-    col_cnt = 0
-    html.writeOpenTag('tr')
-
-    for idea in theme.getIdeaList():
-        if col_cnt == THEME_IDEA_COL_NUMBER:
-            html.writeCloseTag('tr')
-            html.writeOpenTag('tr')
-            col_cnt = 0
-            
-        html.writeOpenTag('td')
-        html.writeOpenTag('a',{'href': url_for('idea', theme=theme_name, idea_id=idea.id)})
-        for l in idea.text:
-            html.writeTag( 'p', conv_encoding(l))
-        html.writeCloseTag('a')
-
-        col_cnt += 1
-
-    html.writeCloseTag('tr')
-    html.writeCloseTag('table')
-
-    html.writeTag('a', 'アイデアを追加', {'href': url_for('add_new_idea', theme=theme_name)})
-
-    return html.rendering()
-
 @app.route("/add_new_theme/")
 def add_new_theme():
     html = HtmlCanvas()
@@ -367,20 +334,13 @@ def edit_idea(theme, idea_id):
 @app.route("/save_idea/<theme>/<idea_id>", methods=['POST'])
 def save_idea(theme, idea_id):
     idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
+    if idea.exists():
+        idea.load()
     idea.text = [conv_encoding(l) for l in request.form['name'].split('\n')]
     idea.note = [conv_encoding(l) for l in request.form['memo'].split('\n')]
     idea.save()
 
-    html = HtmlCanvas()
-    renderingHtmlHeader(html)
-    renderingPageHeader(html, theme, idea)
-    html.writeTag('p', conv_encoding('セーブしました'))
-
-    # ロードして読めるか確認
-    idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
-    idea.load()
-    renderingIdea(html, idea)
-    return html.rendering()
+    return redirect(url_for('theme', theme_name=theme))
 
 @app.route("/idea/<theme>/<idea_id>")
 def idea(theme, idea_id):
@@ -436,7 +396,7 @@ function notifyMovePostit(idea_id, bcell_id){
     ajaxObject.open("POST", "%s", true);
     ajaxObject.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded' );
     ajaxObject.send( 'idea=' + idea_id + '&bcell=' + bcell_id);
-}''' % url_for('move_postit', theme=theme_name, _external=True))
+}''' % url_for('move_postit', theme=theme_name))
 
 
     html.writeCloseTag('script')
@@ -488,8 +448,8 @@ def _calcGridSize(rowmin, colmin, idea_list):
     except ValueError:
         return (rowmin, colmin)
 
-@app.route("/test/<theme_name>")
-def test(theme_name):
+@app.route("/theme/<theme_name>")
+def theme(theme_name):
     html = HtmlCanvas()
     renderingHtmlHeader(html)
     renderingPageHeader(html, theme_name)
@@ -497,7 +457,8 @@ def test(theme_name):
 
     theme = BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
-    colnum , rownum = _calcGridSize(2, 3, idea_list)
+    row = len(idea_list) / 3 + (0 if len(idea_list) % 3 == 0 else 1)
+    colnum , rownum = _calcGridSize(row, 3, idea_list)
 
     _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list)
 
