@@ -454,8 +454,8 @@ def _calcGridSize(rowmin, colmin, idea_list):
         rowmax = max([i.pos[1] for i in idea_list if i.pos[1] != None])
         colmax = max([i.pos[0] for i in idea_list if i.pos[0] != None])
 
-        return (colmax if colmin < colmax else colmin,
-                rowmax if rowmin < rowmax else rowmin)
+        return (rowmax if rowmin < rowmax else rowmin,
+                colmax if colmin < colmax else colmin)
 
     except ValueError:
         return (rowmin, colmin)
@@ -470,7 +470,7 @@ def theme(theme_name):
     theme = BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
     row = len(idea_list) / 3 + (0 if len(idea_list) % 3 == 0 else 1)
-    colnum , rownum = _calcGridSize(row, 3, idea_list)
+    rownum , colnum = _calcGridSize(row, 3, idea_list)
 
     _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list)
 
