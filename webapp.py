@@ -8,53 +8,10 @@ import datetime
 import re
 import sys
 
-#============================================================
-# Global Config
-#============================================================
+from common import * # tool and constants
+from config import *
 
-THEMES_DIR            = '/home/zoni/projects/brast-fire/themes'
-STYLESHEET_PATH       = '/home/zoni/projects/brast-fire/stylesheet.cs'
-DEFAULT_BOARD_COL_COUNT = 5
-
-#============================================================
-# Constants
-#============================================================
-
-IdxOfCol = 0 # index of column in a cordinate tuple
-IdxOfRow = 1 # index of row in a cordinate tuple
-THEME_SETTING_FILE_NAME = '.theme_setting.txt'
-
-#============================================================
-# Tool
-#============================================================
-
-def conv_encoding(data, to_enc="utf_8"):
-    """
-    stringのエンコーディングを変換する
-    @param ``data'' str object.
-    @param ``to_enc'' specified convert encoding.
-    @return str object.
-    @note http://speirs.blog17.fc2.com/blog-entry-4.html より
-    """
-    lookup = ('utf_8', 'euc_jp', 'euc_jis_2004', 'euc_jisx0213',
-            'shift_jis', 'shift_jis_2004','shift_jisx0213',
-            'iso2022jp', 'iso2022_jp_1', 'iso2022_jp_2', 'iso2022_jp_3',
-            'iso2022_jp_ext','latin_1', 'ascii')
-    for encoding in lookup:
-        try:
-            data = data.decode(encoding)
-            break
-        except:
-            pass
-    if isinstance(data, unicode):
-        return data.encode(to_enc)
-    else:
-        return data
-
-
-def create_new_idea_id():
-    return datetime.datetime.now().strftime("%Y%m%d_%H%M%S") 
-
+import model
 
 #============================================================
 # Html Rendering (Framework)
@@ -113,144 +70,6 @@ class HtmlCanvas(HtmlCanvasBase):
                         '<head>', self.header.buf, '</head>'
                         '<body>', self.buf, '</body>'
                         '</html>'])
-
-
-#============================================================
-# Model (Theme & issue)
-#============================================================
-
-class BTTheme(object):
-    '''
-    todo: テーマの Wiki (description.txt とかを読みこませるか？)
-    '''
-    def __init__(self, theme_name):
-        self.text    = theme_name
-
-        self.setting = BTThemeSetting(self.savePath())
-        if self.setting.existSaveFile():
-            self.setting.load()
-
-    def savePath(self):
-        return os.path.join(THEMES_DIR, conv_encoding(self.text,'shift_jis'))
-
-    def getIdeaFileNames(self):
-        files = [f for f in os.listdir(self.savePath()) 
-                 if os.path.isfile(os.path.join(self.savePath(),f)) and re.match(r"^[0-9]+_[0-9]+$", f) != None]
-        files.sort()
-        return files
-
-    def getIdeaCount(self):
-        return len(self.getIdeaFileNames())
-
-    def getIdeaList(self):
-        assert os.path.exists(self.savePath()) , 'Theme:%s is not found.' % self.text
-        idea_list = []
-        for fpath in self.getIdeaFileNames():
-            idea = BTIdea(self.savePath(), fpath)
-            idea.load()
-            idea_list.append(idea)
-        return idea_list
-
-    def saveThemeInfo(self):
-        if not os.path.exists(self.savePath()):
-            os.mkdir(self.savePath())
-        self.setting.save()
-
-    def colCount(self):
-        fixedColSize = self.setting.fixedBoardSize[IdxOfCol]
-        return fixedColSize if fixedColSize != None else self.calcColSize()
-
-    def rowCount(self):
-        fixedRowSize = self.setting.fixedBoardSize[IdxOfRow]
-        return fixedRowSize if fixedRowSize != None else self.calcRowSize()
-
-    def calcColSize(self):
-        fixedRowSize = self.setting.fixedBoardSize[IdxOfRow]
-        ideaCount    = self.getIdeaCount()
-        if fixedRowSize != None:
-            return ideaCount / fixedRowSize + (0 if ideaCount % fixedRowSize == 0 else 1)
-        else:
-            return DEFAULT_BOARD_COL_COUNT
-
-    def calcRowSize(self):
-        fixedColSize = self.setting.fixedBoardSize[0]
-        ideaCount    = self.getIdeaCount()
-        if fixedColSize == None:
-            fixedColSize = DEFAULT_BOARD_COL_COUNT
-        return ideaCount / fixedColSize + (0 if ideaCount % fixedColSize == 0 else 1)
-
-class BTThemeSetting(object):
-    def __init__(self, themeDirPath):
-        '''
-        make setting params fill default value
-        '''
-        self.themeDirPath   = themeDirPath
-
-        # theme satting params
-        self.fixedBoardSize = (None, None) # col, row
-
-    def _saveFilePath(self):
-        return os.path.join(self.themeDirPath, THEME_SETTING_FILE_NAME)
-
-    def existSaveFile(self):
-        return os.path.exists(self._saveFilePath())
-
-    def load(self):
-        with  open(self._saveFilePath(), 'r') as settingFile:
-            for line in settingFile:
-                exp_pair = line.split('=')
-                if len(exp_pair) == 2:
-                    setattr(self, exp_pair[0], eval(exp_pair[1]))
-
-    def save(self):
-        with  open(self._saveFilePath(), 'w') as settingFile:
-            settingFile.write('fixedBoardSize=%s\n' % self.fixedBoardSize.__repr__())
-
-
-class BTIdea(object):
-    def __init__(self, dpath, idea_id):
-        self.theme_dir = dpath
-        self.id        = idea_id
-        self.text      = []
-        self.note      = []
-        self.pos       = (None, None)
-
-    def path(self):
-        return os.path.join(self.theme_dir, self.id)
-
-    def exists(self):
-        return os.path.exists(self.path())
-
-    def load(self):
-        f = open(self.path(),'r')
-
-        in_meta = True
-        for line in f.readlines():
-            # load meta info
-            if in_meta:
-               if line.strip() == '': in_meta = False
-               else:
-                   exp_pair = line.split('=')
-                   if len(exp_pair) == 2:
-                       setattr(self, exp_pair[0], eval(exp_pair[1]))
-                   else:
-                       in_meta = False
-               continue
-            
-            # load text
-            self.text.append( "%s" % line.strip() )
-
-        f.close()
-
-    def save(self):
-        f = open(self.path(),'w')
-        f.write('pos=%s\n' % self.pos.__repr__())
-        f.write('note=%s\n' % self.note.__repr__())
-        f.write('\n')
-        f.write('\n'.join(line.strip() for line in self.text))
-        f.write('\n')
-        f.close()
-
 
 
 #============================================================
@@ -376,7 +195,7 @@ def add_new_theme():
 
 @app.route("/save_theme/", methods=['POST'])
 def save_theme():
-    theme = BTTheme(conv_encoding(request.form['name']))
+    theme = model.BTTheme(conv_encoding(request.form['name']))
 
     col = int(request.form['col']) if request.form['col'] != '' else None
     row = int(request.form['row']) if request.form['row'] != '' else None
@@ -405,7 +224,7 @@ def add_new_idea(theme):
 
 @app.route("/edit_idea/<theme>/<idea_id>")
 def edit_idea(theme, idea_id):
-    idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
+    idea = model.BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
     idea.load()
 
     html = HtmlCanvas()
@@ -418,7 +237,7 @@ def edit_idea(theme, idea_id):
 
 @app.route("/save_idea/<theme>/<idea_id>", methods=['POST'])
 def save_idea(theme, idea_id):
-    idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
+    idea = model.BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
     if idea.exists():
         idea.load()
     idea.text = [conv_encoding(l) for l in request.form['name'].split('\n')]
@@ -429,7 +248,7 @@ def save_idea(theme, idea_id):
 
 @app.route("/idea/<theme>/<idea_id>")
 def idea(theme, idea_id):
-    idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
+    idea = model.BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
     idea.load()
 
     html = HtmlCanvas()
@@ -553,7 +372,7 @@ def theme(theme_name):
     renderingPageHeader(html, theme_name)
     _renderingJScript(html, theme_name)
 
-    theme = BTTheme(conv_encoding(theme_name))
+    theme = model.BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
 
     colnum , rownum= _calcGridSize(theme.colCount(), theme.rowCount(), idea_list)
@@ -583,7 +402,7 @@ def move_postit(theme):
     col = int(matobj.group(1))
     row = int(matobj.group(2))
 
-    idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
+    idea = model.BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
     idea.load()
     idea.pos = (col, row)
     idea.save()
