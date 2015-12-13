@@ -519,7 +519,7 @@ def _renderingPostIt(html, theme_name, idea):
 
     html.writeCloseTag('div')
 
-def _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list):
+def _renderingKanbanBoard(html, colnum, rownum, theme_name, idea_list):
     html.writeOpenTag('table', {'class':'board'})
     for row in range(0, rownum):
         html.writeOpenTag('tr', {'class':'board-row'})
@@ -528,22 +528,23 @@ def _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list):
                                      ,'ondragover':'onDragOver(event);'
                                      ,'ondrop'    :'onDrop(event);'
                                      ,'id' :'bcell%d_%d' % (col,row)})
-            for idea in [i for i in idea_list if (i.pos[0] == row and i.pos[1] == col)]:
+            for idea in [i for i in idea_list if (i.pos[IdxOfRow] == row and i.pos[IdxOfCol] == col)]:
                 _renderingPostIt(html, theme_name, idea)
             html.writeCloseTag('td')
         html.writeCloseTag('tr')
     html.writeCloseTag('table')
 
-def _calcGridSize(rowmin, colmin, idea_list):
+def _calcGridSize(colmin, rowmin, idea_list):
     try:
-        rowmax = max([i.pos[1] for i in idea_list if i.pos[1] != None])
-        colmax = max([i.pos[0] for i in idea_list if i.pos[0] != None])
+        colmax = max([i.pos[IdxOfCol] for i in idea_list if i.pos[IdxOfCol] != None])
+        rowmax = max([i.pos[IdxOfRow] for i in idea_list if i.pos[IdxOfRow] != None])
 
-        return (rowmax if rowmin < rowmax else rowmin,
-                colmax if colmin < colmax else colmin)
+        return (colmax if colmin < colmax else colmin,
+                rowmax if rowmin < rowmax else rowmin)
+                
 
     except ValueError:
-        return (rowmin, colmin)
+        return (colmin, rowmin)
 
 @app.route("/theme/<theme_name>")
 def theme(theme_name):
@@ -555,13 +556,15 @@ def theme(theme_name):
     theme = BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
 
-    rownum , colnum = _calcGridSize(theme.rowCount(), theme.colCount(), idea_list)
+    colnum , rownum= _calcGridSize(theme.colCount(), theme.rowCount(), idea_list)
 
-    _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list)
+    _renderingKanbanBoard(html, colnum, rownum, theme_name, idea_list)
 
     html.writeOpenTag('div')
     html.writeTag('p', '*未配置*')
     for idea in (i for i in idea_list if i.pos[0] == None and i.pos[1] == None):
+        _renderingPostIt(html,theme_name,idea)
+    for idea in (i for i in idea_list if i.pos[IdxOfCol] > colnum or i.pos[IdxOfRow] == rownum):
         _renderingPostIt(html,theme_name,idea)
     html.writeCloseTag('div')
 
@@ -582,7 +585,7 @@ def move_postit(theme):
 
     idea = BTIdea(os.path.join(THEMES_DIR, theme), idea_id)
     idea.load()
-    idea.pos = (row, col)
+    idea.pos = (col, row)
     idea.save()
 
     return 'MOVE_SAVED! %s -to-> %s' % (request.form['idea'], request.form['bcell'])
