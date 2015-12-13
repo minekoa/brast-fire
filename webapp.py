@@ -358,6 +358,16 @@ def add_new_theme():
     html.writeCloseTag('div')
 
     html.writeOpenTag('div')
+    html.writeTag('h3', 'Board Size (Optional)')
+    html.writeTag('span', '(col, row) = (')
+    html.writeTag('input', '', {'type':'text', 'name':'col', 'size':'3'})
+    html.writeTag('span', ',')
+    html.writeTag('input', '', {'type':'text', 'name':'row', 'size':'3'})
+    html.writeTag('span', ')  ... if you required auto adjust, keep a blank text.')
+    html.writeCloseTag('div')
+    
+
+    html.writeOpenTag('div')
     html.writeOpenTag('input', {'type':'submit', 'value':'Accept'})
     html.writeCloseTag('div')
     html.writeCloseTag('form')
@@ -367,6 +377,13 @@ def add_new_theme():
 @app.route("/save_theme/", methods=['POST'])
 def save_theme():
     theme = BTTheme(conv_encoding(request.form['name']))
+
+    col = int(request.form['col']) if request.form['col'] != '' else None
+    row = int(request.form['row']) if request.form['row'] != '' else None
+    assert col == None or col > 0, 'invalid column count "%s"' % col
+    assert row == None or row > 0, 'invalid row count "%s"' % row
+
+    theme.setting.fixedBoardSize = (col, row)
     theme.saveThemeInfo()
 
     html = HtmlCanvas()
