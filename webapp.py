@@ -9,12 +9,20 @@ import re
 import sys
 
 #============================================================
-# Config
+# Global Config
 #============================================================
 
-THEMES_DIR            = '/home/zoni/project/brast-fire/themes'
-STYLESHEET_PATH       = '/home/zoni/project/brast-fire/stylesheet.cs'
-THEME_IDEA_COL_NUMBER = 3
+THEMES_DIR            = '/home/zoni/projects/brast-fire/themes'
+STYLESHEET_PATH       = '/home/zoni/projects/brast-fire/stylesheet.cs'
+DEFAULT_BOARD_COL_COUNT = 5
+
+#============================================================
+# Constants
+#============================================================
+
+IdxOfCol = 0 # index of column in a cordinate tuple
+IdxOfRow = 1 # index of row in a cordinate tuple
+THEME_SETTING_FILE_NAME = '.theme_setting.txt'
 
 #============================================================
 # Tool
@@ -116,28 +124,88 @@ class BTTheme(object):
     todo: テーマの Wiki (description.txt とかを読みこませるか？)
     '''
     def __init__(self, theme_name):
-        self.text   = theme_name
+        self.text    = theme_name
+
+        self.setting = BTThemeSetting(self.savePath())
+        if self.setting.existSaveFile():
+            self.setting.load()
 
     def savePath(self):
         return os.path.join(THEMES_DIR, conv_encoding(self.text,'shift_jis'))
 
+    def getIdeaFileNames(self):
+        files = [f for f in os.listdir(self.savePath()) 
+                 if os.path.isfile(os.path.join(self.savePath(),f)) and re.match(r"^[0-9]+_[0-9]+$", f) != None]
+        files.sort()
+        return files
+
+    def getIdeaCount(self):
+        return len(self.getIdeaFileNames())
+
     def getIdeaList(self):
         assert os.path.exists(self.savePath()) , 'Theme:%s is not found.' % self.text
         idea_list = []
-
-        for dpath, dirs, files in os.walk(self.savePath()):
-            files.sort()
-            
-            for fpath in files:
-                if re.match(r"^[0-9]+_[0-9]+$", fpath) == None: continue
-                idea = BTIdea(dpath, fpath)
-                idea.load()
-                idea_list.append(idea)
+        for fpath in self.getIdeaFileNames():
+            idea = BTIdea(self.savePath(), fpath)
+            idea.load()
+            idea_list.append(idea)
         return idea_list
 
     def saveThemeInfo(self):
         if not os.path.exists(self.savePath()):
             os.mkdir(self.savePath())
+        self.setting.save()
+
+    def colCount(self):
+        fixedColSize = self.setting.fixedBoardSize[IdxOfCol]
+        return fixedColSize if fixedColSize != None else self.calcColSize()
+
+    def rowCount(self):
+        fixedRowSize = self.setting.fixedBoardSize[IdxOfRow]
+        return fixedRowSize if fixedRowSize != None else self.calcRowSize()
+
+    def calcColSize(self):
+        fixedRowSize = self.setting.fixedBoardSize[IdxOfRow]
+        ideaCount    = self.getIdeaCount()
+        if fixedRowSize != None:
+            return ideaCount / fixedRowSize + (0 if ideaCount % fixedRowSize == 0 else 1)
+        else:
+            return DEFAULT_BOARD_COL_COUNT
+
+    def calcRowSize(self):
+        fixedColSize = self.setting.fixedBoardSize[0]
+        ideaCount    = self.getIdeaCount()
+        if fixedColSize == None:
+            fixedColSize = DEFAULT_BOARD_COL_COUNT
+        return ideaCount / fixedColSize + (0 if ideaCount % fixedColSize == 0 else 1)
+
+class BTThemeSetting(object):
+    def __init__(self, themeDirPath):
+        '''
+        make setting params fill default value
+        '''
+        self.themeDirPath   = themeDirPath
+
+        # theme satting params
+        self.fixedBoardSize = (None, None) # col, row
+
+    def _saveFilePath(self):
+        return os.path.join(self.themeDirPath, THEME_SETTING_FILE_NAME)
+
+    def existSaveFile(self):
+        return os.path.exists(self._saveFilePath())
+
+    def load(self):
+        with  open(self._saveFilePath(), 'r') as settingFile:
+            for line in settingFile:
+                exp_pair = line.split('=')
+                if len(exp_pair) == 2:
+                    setattr(self, exp_pair[0], eval(exp_pair[1]))
+
+    def save(self):
+        with  open(self._saveFilePath(), 'w') as settingFile:
+            settingFile.write('fixedBoardSize=%s\n' % self.fixedBoardSize.__repr__())
+
 
 class BTIdea(object):
     def __init__(self, dpath, idea_id):
@@ -469,8 +537,8 @@ def theme(theme_name):
 
     theme = BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
-    row = len(idea_list) / 3 + (0 if len(idea_list) % 3 == 0 else 1)
-    rownum , colnum = _calcGridSize(row, 3, idea_list)
+
+    rownum , colnum = _calcGridSize(theme.rowCount(), theme.colCount(), idea_list)
 
     _renderingKanbanBoard(html, rownum, colnum, theme_name, idea_list)
 
