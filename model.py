@@ -82,6 +82,7 @@ class BTThemeSetting(object):
 
         # theme satting params
         self.fixedBoardSize = (None, None) # col, row
+        self.columnHeader = () # tupple of string
 
     def _saveFilePath(self):
         return os.path.join(self.themeDirPath, THEME_SETTING_FILE_NAME)
@@ -99,6 +100,7 @@ class BTThemeSetting(object):
     def save(self):
         with  open(self._saveFilePath(), 'w') as settingFile:
             settingFile.write('fixedBoardSize=%s\n' % self.fixedBoardSize.__repr__())
+            settingFile.write('columnHeader=%s\n' % self.columnHeader.__repr__())
 
 
 class BTIdea(object):

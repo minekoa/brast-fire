@@ -171,11 +171,13 @@ def add_new_theme():
 
     html.writeOpenTag('form', {'method':'post',
                                'action': url_for('save_theme')})
+    # edit Theme Name
     html.writeOpenTag('div')
     html.writeTag('h3', 'Idea Name:')
     html.writeTag('textarea', '', {'name':'name'})
     html.writeCloseTag('div')
 
+    # edit Board Size
     html.writeOpenTag('div')
     html.writeTag('h3', 'Board Size (Optional)')
     html.writeTag('span', '(col, row) = (')
@@ -185,6 +187,12 @@ def add_new_theme():
     html.writeTag('span', ')  ... if you required auto adjust, keep a blank text.')
     html.writeCloseTag('div')
     
+    # Edit Column Header
+    html.writeOpenTag('div')
+    html.writeTag('h3', 'Column Header (Optional)')
+    html.writeTag('p', 'カンマで区切って記述します。カンマを含むヘッダは諦めてね。')
+    html.writeTag('input', '', {'type':'text', 'name':'column_header'})
+    html.writeCloseTag('div')
 
     html.writeOpenTag('div')
     html.writeOpenTag('input', {'type':'submit', 'value':'Accept'})
@@ -202,7 +210,11 @@ def save_theme():
     assert col == None or col > 0, 'invalid column count "%s"' % col
     assert row == None or row > 0, 'invalid row count "%s"' % row
 
+    col_header = [header.strip() for header in request.form['column_header'].split(',')]
+    assert len(col_header) == col, 'nomatch col_header_item_num <> column_num'
+
     theme.setting.fixedBoardSize = (col, row)
+    theme.setting.columnHeader   = col_header
     theme.saveThemeInfo()
 
     html = HtmlCanvas()
@@ -338,8 +350,17 @@ def _renderingPostIt(html, theme_name, idea):
 
     html.writeCloseTag('div')
 
-def _renderingKanbanBoard(html, colnum, rownum, theme_name, idea_list):
+def _renderingKanbanBoard(html, colnum, rownum, theme_name, column_header, idea_list):
     html.writeOpenTag('table', {'class':'board'})
+
+    # rendering table-header
+    if len(column_header) != 0:
+        html.writeOpenTag('tr')
+        for header_string in column_header:
+            html.writeTag('th', header_string)
+        html.writeCloseTag('tr')
+
+    # rendering table-body
     for row in range(0, rownum):
         html.writeOpenTag('tr', {'class':'board-row'})
         for col in range(0, colnum):
@@ -375,9 +396,10 @@ def theme(theme_name):
     theme = model.BTTheme(conv_encoding(theme_name))
     idea_list = theme.getIdeaList()
 
-    colnum , rownum= _calcGridSize(theme.colCount(), theme.rowCount(), idea_list)
+    colnum , rownum = _calcGridSize(theme.colCount(), theme.rowCount(), idea_list)
+    col_header      = theme.setting.columnHeader
 
-    _renderingKanbanBoard(html, colnum, rownum, theme_name, idea_list)
+    _renderingKanbanBoard(html, colnum, rownum, theme_name, col_header, idea_list)
 
     html.writeOpenTag('div')
     html.writeTag('p', '*未配置*')
